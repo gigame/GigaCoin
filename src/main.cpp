@@ -1281,13 +1281,64 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pb
     if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
     if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
 
+    //DigiShield implementation - thanks to RealSolid & WDC for this code
+    // amplitude filter - thanks to daft27 for this code
+    nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
+
+    if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
+    if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
+
+
+    //gigacoin slingshield modification:
+    /*intentions:
+    This will make it so that blocks with many coins spent will be harder to solve.
+    This serves two purposes:
+    1. It's pretty much certain that when the block reward goes up significantly from percentage transaction fees, multipools will hop on
+       This makes it so that when the reward is higher, the difficulty is automatically a bit higher, ensuring multipools can't instamine the high value block
+    2. This increases overall network security, given the certainty that multipools won't always be mining this. 
+       If trying to do a signficant double spend, you'd have to spend the coins on both sides of the double-spend fork attempt. 
+       To comply with network rules, both sides would therefore be of higher difficulty(up to 20% higher). This is not a problem
+       for the legitimate fork though, because when the big spend and it's fees are seen, multipools would hop on.
+       This effectively makes it so that a significant network attack would require a 71% hashrate, rather than just 51%
+       Given that multipools will always mine big transaction blocks, that is. 
+
+       This effectively makes mining big fees slightly less profitable. So, when fees increase by 2%, difficulty of the block increases by 1%, 3% is 2%, etc. 
+       It's possible you could make a transaction with only mining fees to circumvent this, but this block would be less difficult, and as such, 
+       if the block containing your spend was mined, it would replace your weaker block. So, this makes 1 confirmation transactions significantly safer.
+    */
+    int64_t adjust=0;
+    if(pindexLast->nHeight > (HOUR*DAY*7) && pindexLast->nHeight < (HOUR*DAY*75) ) //don't activate til rewards drop
+    {
+        const static int64_t stepcount=12;
+        //min fees: 0.1, 0.2, etc etc corresponding to 1% increase, 2% increase etc
+        const static int64_t steps[stepcount]={100*COIN,200*COIN,300*COIN,400*COIN,500*COIN,600*COIN,700*COIN,800*COIN,900*COIN,1000*COIN,1100*COIN,2100*COIN};
+        //difficulty increase in milliseconds. Corresponds to 0.5% increase, 1%, 2%, etc
+        const static int64_t adjusts[stepcount]={300,600,1200,1800,2400,3000,3600,4200,4800,5400,6000,12000};
+        int64_t sum=0;
+        BOOST_FOREACH(const CTransaction &tx, pblock->vtx)
+        {
+            sum+=tx.GetValueOut();
+        }
+        for(int i=0;i<stepcount;i++)
+        {
+            if(sum>steps[i])
+            {
+                adjust=adjusts[i];
+            }else
+            {
+                break;
+            }
+        }
+    }
+
     // Retarget
     CBigNum bnNew;
     bnNew.SetCompact(pindexLast->nBits);
     //scale up for millisecond granularity
     int64_t scale=1000;
     bnNew *= nActualTimespan*scale;
-    bnNew /= retargetTimespan*scale; 
+    //slingshield effectively works by making the target block time longer temporarily
+    bnNew /= (retargetTimespan*scale)+adjust; 
 
 
 
