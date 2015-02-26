@@ -1,0 +1,6 @@
+gigacoin-qt usr/bin
+share/pixmaps/gigacoin32.xpm usr/share/pixmaps
+share/pixmaps/gigacoin16.xpm usr/share/pixmaps
+share/pixmaps/gigacoin128.png usr/share/pixmaps
+debian/gigacoin-qt.desktop usr/share/applications
+debian/gigacoin-qt.protocol usr/share/kde4/services/

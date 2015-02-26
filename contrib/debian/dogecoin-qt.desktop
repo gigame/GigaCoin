@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Gigacoin
+Comment=Gigacoin P2P Cryptocurrency
+Comment[fr]=Gigacoin, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=Gigacoin, eşten eşe kriptografik sanal para birimi
+Exec=gigacoin-qt %u
+Terminal=false
+Type=Application
+Icon=gigacoin128
+MimeType=x-scheme-handler/gigacoin;
+Categories=Office;Finance;

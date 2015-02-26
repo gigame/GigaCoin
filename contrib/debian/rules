@@ -1,0 +1,33 @@
+#!/usr/bin/make -f
+# -*- mode: makefile; coding: utf-8 -*-
+
+#DEB_MAKE_CHECK_TARGET = test_gigacoin
+#build/gigacoind::
+#	$(if $(filter nocheck,$(DEB_BUILD_OPTIONS)),,src/test_gigacoin)
+
+DEB_INSTALL_EXAMPLES_gigacoind += debian/examples/*
+DEB_INSTALL_MANPAGES_gigacoind += debian/manpages/*
+
+%:
+	dh --with bash-completion $@
+
+override_dh_auto_build:
+	cd src; $(MAKE) -f makefile.unix gigacoind
+	$(MAKE)
+
+override_dh_auto_clean:
+	if [ -f Makefile ]; then $(MAKE) clean; else rm -rf build/; rm -f gigacoin-qt; fi
+	cd src; $(MAKE) -f makefile.unix clean
+
+override_dh_auto_configure:
+	qmake gigacoin-qt.pro USE_QRCODE=1
+
+override_dh_auto_test:
+	cd src; $(MAKE) -f makefile.unix test_gigacoin
+	src/test_gigacoin
+
+# Ensure wrapper is set executable
+binary-post-install/gigacoind:
+	chmod +x $(cdbs_curdestdir)usr/bin/gigacoind
+binary-post-install/gigacoin-qt:
+	chmod +x $(cdbs_curdestdir)usr/bin/gigacoin-qt
