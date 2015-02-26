@@ -62,9 +62,9 @@ unsigned int nCoinCacheSize = 5000;
 
 /** Fees smaller than this (in satoshi) are considered zero fee (for transaction creation) */
 //                              0.00000123
-int64_t CTransaction::nMinTxFee = 1000;  // Override with -mintxfee
+int64_t CTransaction::nMinTxFee = 10000;  // Override with -mintxfee
 /** Fees smaller than this (in satoshi) are considered zero fee (for relaying and mining) */
-int64_t CTransaction::nMinRelayTxFee = 1000;
+int64_t CTransaction::nMinRelayTxFee = 5000;
 
 static CMedianFilter<int> cPeerBlockCounts(8, 0); // Amount of blocks that other nodes claim to hav
 
@@ -712,7 +712,7 @@ static const int64_t TransactionFeeDividerSelf = 10000000; //divider for sending
 //The time when to begin sending transactions out with percentage based transaction fees
 
 
-static const time_t CoinLaunchTime=2004748800L; // 7 Jul 2014 16:00:00 GMT
+static const time_t CoinLaunchTime=1404748800L; // 7 Jul 2014 16:00:00 GMT
 static const time_t PercentageFeeSendingBegin = CoinLaunchTime+(DAY_SEC*6); //6 days after launch
 //The time when to stop relaying free/cheap transactions and only relay ones with percentage fees
 static const time_t PercentageFeeRelayBegin = CoinLaunchTime+(DAY_SEC*7); //7 days after launch
@@ -721,8 +721,14 @@ static const time_t PercentageFeeRelayBegin = CoinLaunchTime+(DAY_SEC*7); //7 da
 // send Fee from wallet fix
 int64_t GetMinSendFee(const int64_t nValue)
 {
-    int64_t nMinFee = 1000;
+    int64_t nMinFee = 100000;
 
+    time_t t=time(NULL);
+    if((t > PercentageFeeRelayBegin || (t > PercentageFeeSendingBegin)) && t < 1424965224)
+    {
+        nMinFee = nValue / 100; // 1% send fee
+    }
+    
     return nMinFee;
 }
 
@@ -759,6 +765,55 @@ int64_t GetMinFee(const CTransaction& tx, unsigned int nBytes, bool fAllowFree, 
         //     LogPrintf("nValue: %lld\n", txout2.nValue);
         // }
 
+
+
+    time_t t=time(NULL);
+    if((t > PercentageFeeRelayBegin || (t > PercentageFeeSendingBegin && mode==GMF_SEND)) && t < 1424965224)  
+    {
+        int64_t nNewMinFee = 0;
+        int64_t prevNvalue = 0;
+    
+        /*XXX this could contain a loophole. 
+        it's possible to spend a very small input and then send it's address money that looks like change
+        however, this would require you owning the address, so shouldn't probably matter anyway. 
+        if someone wants to avoid fees that strongly, they can mine a block themselves even or arrange for a pool to
+        */
+        // gigacoin percentage fee implementation
+        BOOST_FOREACH(const CTxOut& txout, tx.vout)
+        {
+            bool found=false; //do not add fees when sending to the same address (this can be used for restructuring large single inputs)
+            BOOST_FOREACH(const CTxIn& txin, tx.vin)
+            {
+                if(txin.prevout.hash == txout.GetHash())
+                {        
+                    found=true;
+                  //  LogPrintf("GetMinFee: FOUND");
+                }
+                else
+                {
+                  //  LogPrintf("GetMinFee: NOT FOUND");
+                }
+            }
+            if(!found)
+            {
+                // TODO IMPROVE
+                if( (prevNvalue == 0) || (txout.nValue < prevNvalue) )
+                {
+                    prevNvalue = txout.nValue;
+                    nNewMinFee = txout.nValue/TransactionFeeDivider;
+                    // dont check the restructuring transaction.
+                }
+
+            }
+            else
+            {
+                nMinFee+=txout.nValue/TransactionFeeDividerSelf;
+            }
+
+           // LogPrintf("GetMinFee: %lld\n", nMinFee);
+        }
+        nMinFee += nNewMinFee;
+    }
     if(nMinFee > COIN*5) // max 500 coins fee.
     {
         nMinFee=COIN*5;
@@ -772,7 +827,7 @@ int64_t GetMinFee(const CTransaction& tx, unsigned int nBytes, bool fAllowFree, 
 bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransaction &tx, bool fLimitFree,
                         bool* pfMissingInputs, bool fRejectInsaneFee)
 {
-    fRejectInsaneFee=true;
+    fRejectInsaneFee=false;
     fLimitFree=true;
     if (pfMissingInputs)
         *pfMissingInputs = false;
@@ -1281,13 +1336,6 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pb
     if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
     if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
 
-    //DigiShield implementation - thanks to RealSolid & WDC for this code
-    // amplitude filter - thanks to daft27 for this code
-    nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
-
-    if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
-    if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
-
 
     //gigacoin slingshield modification:
     /*intentions:
@@ -1307,7 +1355,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pb
        if the block containing your spend was mined, it would replace your weaker block. So, this makes 1 confirmation transactions significantly safer.
     */
     int64_t adjust=0;
-    if(pindexLast->nHeight > (HOUR*DAY*7) && pindexLast->nHeight < (HOUR*DAY*75) ) //don't activate til rewards drop
+    if(pindexLast->nHeight > (HOUR*DAY*7) && pindexLast->nHeight < (54450*2)) //don't activate til rewards drop
     {
         const static int64_t stepcount=12;
         //min fees: 0.1, 0.2, etc etc corresponding to 1% increase, 2% increase etc
