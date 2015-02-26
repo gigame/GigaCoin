@@ -37,11 +37,11 @@ static const int MIN_PEER_PROTO_VERSION = 60001;
 
 // nTime field added to CAddress, starting with this version;
 // if possible, avoid requesting addresses nodes older than this
-static const int CADDR_TIME_VERSION = 31402;
+static const int CADDR_TIME_VERSION = 90002;
 
 // only request blocks from nodes outside this range of versions
 static const int NOBLKS_VERSION_START = 60000;
-static const int NOBLKS_VERSION_END = 60002;
+static const int NOBLKS_VERSION_END = 90002;
 
 // BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;
