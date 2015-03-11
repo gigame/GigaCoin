@@ -1355,7 +1355,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pb
        if the block containing your spend was mined, it would replace your weaker block. So, this makes 1 confirmation transactions significantly safer.
     */
     int64_t adjust=0;
-    if(pindexLast->nHeight > (HOUR*DAY*7) && pindexLast->nHeight < (108969)) //don't activate til rewards drop
+    if(pindexLast->nHeight > (HOUR*DAY*7) && pindexLast->nHeight < (108971)) //don't activate til rewards drop
     {
         const static int64_t stepcount=12;
         //min fees: 0.1, 0.2, etc etc corresponding to 1% increase, 2% increase etc
