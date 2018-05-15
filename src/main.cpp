@@ -643,12 +643,6 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
     return chainActive.Height() - pindex->nHeight + 1;
 }
 
-
-
-
-
-
-
 bool CheckTransaction(const CTransaction& tx, CValidationState &state)
 {
     // Basic checks that don't depend on any context
@@ -706,7 +700,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state)
     return true;
 }
 
-static const int64_t TransactionFeeDivider = 200; //divider for outputs to specify transaction fee percentage (in this case, 0.5%)
+static const int64_t TransactionFeeDivider = 500; //divider for outputs to specify transaction fee percentage (in this case, 0.2%)
 static const int64_t TransactionFeeDividerSelf = 10000000; //divider for sending an input to output by same address to specify transaction fee percentage
 //the fee for sending to self equates to almost nothing
 //The time when to begin sending transactions out with percentage based transaction fees
@@ -721,7 +715,7 @@ static const time_t PercentageFeeRelayBegin = CoinLaunchTime+(DAY_SEC*7); //7 da
 // send Fee from wallet fix
 int64_t GetMinSendFee(const int64_t nValue)
 {
-    int64_t nMinFee = 100000;
+    int64_t nMinFee = 10000;
 
     time_t t=time(NULL);
     if((t > PercentageFeeRelayBegin || (t > PercentageFeeSendingBegin)) && t < 1424965224)
@@ -1264,7 +1258,7 @@ unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime)
             nTime -= nTargetTimespan*4;
         } else {
             // Maximum 10% adjustment...
-            bnResult = (bnResult * 110) / 100;
+            bnResult = (bnResult * 120) / 100;
             // ... in best-case exactly 4-times-normal target time
             nTime -= nTargetTimespan*4;
         }
@@ -1334,7 +1328,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pb
     nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
 
     if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
-    if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
+    if (nActualTimespan > (retargetTimespan + (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/4));
 
 
     //gigacoin slingshield modification:
@@ -1377,7 +1371,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pb
                 break;
             }
         }
-    }
+    } 
 
     // Retarget
     CBigNum bnNew;
@@ -1436,7 +1430,7 @@ bool IsInitialBlockDownload()
         nLastUpdate = GetTime();
     }
     return (GetTime() - nLastUpdate < 10 &&
-            chainActive.Tip()->GetBlockTime() < GetTime() - DAY_SEC);
+            chainActive.Tip()->GetBlockTime() < GetTime() - (DAY_SEC)*1100);
 }
 
 bool fLargeWorkForkFound = false;
@@ -2564,7 +2558,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CDiskBlockPos* dbp)
     // Relay inventory, but don't relay old inventory during initial block download
     int nBlockEstimate = Checkpoints::GetTotalBlocksEstimate();
     if (chainActive.Tip()->GetBlockHash() == hash)
-    {
+    {  
         LOCK(cs_vNodes);
         BOOST_FOREACH(CNode* pnode, vNodes)
             if (chainActive.Height() > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))

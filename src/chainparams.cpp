@@ -22,7 +22,7 @@ using namespace boost::assign;
 
 unsigned int pnSeed[] =
 {
-    0x9ece5553, 0x2f8e4c90, 0x318e4c90, 0x3a153b25, 0x46cd1c2e,
+    0xae8a7dfb, 0xcebdfcbd,
 };
 
 class CMainParams : public CChainParams {
@@ -63,40 +63,7 @@ public:
 
         hashGenesisBlock = genesis.GetHash();
 
-        if (false)
-        {
-            printf("Searching for genesis block...\n");
-            // This will figure out a valid hash and Nonce if you're
-            // creating a different genesis block:
-            uint256 hashTarget = CBigNum().SetCompact(genesis.nBits).getuint256();
-            uint256 thash;
-            
-            CBigNum bnTarget;
-            bnTarget.SetCompact(genesis.nBits);
-
-            while(1)
-            {
-                thash=genesis.GetHash();
-                if ((thash <= hashTarget) && (thash <= bnTarget.getuint256()) )
-                    break;
-                if ((genesis.nNonce & 0xFFF) == 0)
-                {
-                    printf("nonce %08X: hash = %s (target = %s)\n",genesis.nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
-                }
-                ++genesis.nNonce;
-                if (genesis.nNonce == 0)
-                {
-                    printf("NONCE WRAPPED, incrementing time\n");
-                    ++genesis.nTime;
-                }
-            }
-            printf("genesis.nTime = %u \n",genesis.nTime);
-            printf("genesis.nNonce = %u \n",genesis.nNonce);
-            printf("min nBit: %08x\n", bnProofOfWorkLimit.GetCompact());
-            printf("genesis.hashMerkleRoot = %s\n",genesis.hashMerkleRoot.ToString().c_str());
-            printf("genesis.GetHash = %s\n",genesis.GetHash().ToString().c_str());
-            exit(1);
-        }
+        
         /*
 genesis.nTime = 1411912345 
 genesis.nNonce = 5086384 
@@ -108,7 +75,7 @@ genesis.GetHash = 00000b0ca0b2d175adfad32c63b600ce3822efff1fe26cea89b2998fc5d26d
         assert(genesis.hashMerkleRoot == uint256("0x06a61fe47390dca7bc8e10f7f91b066a369e30b1f19bf427686fd0a7577a98f7"));
         assert(hashGenesisBlock == uint256("0x00000b0ca0b2d175adfad32c63b600ce3822efff1fe26cea89b2998fc5d26dc7"));
 
-        vSeeds.push_back(CDNSSeedData("165.225.139.20", "165.225.139.20"));
+        vSeeds.push_back(CDNSSeedData("174.138.125.251", "174.138.125.251"));
 
 
         // Workaround for Boost not being quite compatible with C++11;
@@ -225,7 +192,7 @@ genesis.GetHash = 00000032d0dbaaa17e6a9db1300ceb346c666cb1b6ea8ee49b945300be9468
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        vSeeds.push_back(CDNSSeedData("165.225.139.20", "165.225.139.20"));
+        vSeeds.push_back(CDNSSeedData("174.138.125.251", "174.138.125.251"));
  
 
         // Boost sucks, and should not be used. Workaround for Boost not being compatible with C++11;
